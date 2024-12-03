@@ -24,7 +24,6 @@ int match_result(string data, string pattern) {
     regex number_pattern("[0-9]{1,3}");
     sregex_iterator multiplier_results(data.begin(), data.end(), multiplier_pattern);
     sregex_iterator end;
-    smatch dont_match, do_match;
     bool mul_enabled = true;
     int inner_mul;
     int result = 0;
