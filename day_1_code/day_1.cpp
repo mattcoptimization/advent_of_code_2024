@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <set>
+#include <algorithm>
 using namespace std;
 
 tuple< vector<int>, vector<int> > read_data(string file_name, string delimiter){
