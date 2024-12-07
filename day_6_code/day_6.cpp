@@ -74,48 +74,40 @@ int next_direction(int current_direction){
     }
 }
 
-bool find_loop_in_direction(array<int, 2> current_position, int current_direction, int number_of_rows, int number_of_columns, map<array<int, 2>, array<bool, 4>> directions_at_location){
-    int next_dir = next_direction(current_direction);
+bool simulate_timestep(int number_of_rows, int number_of_columns, vector<vector<char>>& data, map<array<int, 2>, array<bool, 4>>& directions_at_location, array<int, 2>& current_location, int& current_direction){
 
-    while (check_out_of_bounds(number_of_rows, number_of_columns, current_position)){
-        if (directions_at_location.find(current_position) != directions_at_location.end()) {
-            if (directions_at_location[current_position][next_dir]){
-                return true;
-            }
-        }
-        current_position = move_character(next_dir, current_position);
+    if (update_direction(current_direction, current_location, data)){
+        current_direction = next_direction(current_direction);
+    } else {
+        current_location = move_character(current_direction, current_location);
     }
-    return false;
 
+    if (!check_out_of_bounds(number_of_rows, number_of_columns, current_location)){
+        return false;
+    }
+
+    return true;
 }
 
-int count_number_of_visited_locations(vector<vector<char>> data, array<int, 2> starting_location){
+map<array<int, 2>, array<bool, 4>> count_number_of_visited_locations(vector<vector<char>> data, array<int, 2> starting_location){
     
-
-    set<array<int, 2>> locations_visited, added_obstacles;
     map<array<int, 2>, array<bool, 4>> directions_at_location;
+    bool continue_traversing;
 
     int current_direction = 0;
     array<int, 2> current_position = starting_location;
     int number_of_rows = data.size();
     int number_of_columns = data[0].size();
     directions_at_location[current_position] = {true, false, false, false};
-    locations_visited.insert(current_position);
     while (check_out_of_bounds(number_of_rows, number_of_columns, current_position)){
-        current_position = move_character(current_direction, current_position);
-
-        if (!check_out_of_bounds(number_of_rows, number_of_columns, current_position)){
+        // Update the direction
+        if (!simulate_timestep(number_of_rows, number_of_columns, data, directions_at_location, current_position, current_direction)){
             break;
         }
-
-        locations_visited.insert(current_position);
-
-        if (find_loop_in_direction(current_position, current_direction, number_of_rows, number_of_columns, directions_at_location)){
-            array<int, 2> added_obstacle = move_character(current_direction, current_position);
-            added_obstacles.insert(move_character(current_direction, current_position));
-            cout << added_obstacles.size() << endl;
-        } 
-
+        if(directions_at_location[current_position][current_direction]){
+            directions_at_location.clear();
+            return directions_at_location;
+        }
         if (directions_at_location.find(current_position) == directions_at_location.end()){
             // Add current location and direction to the map
             directions_at_location[current_position] = {false, false, false, false};
@@ -124,13 +116,29 @@ int count_number_of_visited_locations(vector<vector<char>> data, array<int, 2> s
             directions_at_location[current_position][current_direction] = true;
         }
         
-        // Update the direction
-        if (update_direction(current_direction, current_position, data)){
-            current_direction = next_direction(current_direction);
+    }
+    return directions_at_location;
+}
+
+int count_valid_obstacles(vector<vector<char>> data, array<int, 2> starting_location){
+    vector<vector<char>> obstacle_added_data;
+    map<array<int, 2>, array<bool, 4>> visited_locations;
+    int valid_obstacles = 0;
+    for(int i = 0; i < data.size(); i++){
+        for (int j = 0; j < data[0].size(); j++){
+            array<int, 2> obstacle_location = {i, j};
+            if (obstacle_location != starting_location && data[i][j] == '.'){
+                obstacle_added_data = data;
+                obstacle_added_data[i][j] = '#';
+                visited_locations = count_number_of_visited_locations(obstacle_added_data, starting_location);
+                if (visited_locations.size() == 0){
+                    valid_obstacles++;
+                    cout << valid_obstacles << endl;
+                }
+            }
         }
     }
-    cout << added_obstacles.size() << endl;
-    return locations_visited.size();
+    return valid_obstacles;
 }
 
 int main() {
@@ -139,7 +147,11 @@ int main() {
     string file_name = "day_6_input.txt";
     tie(starting_position, data) = read_data(file_name);
 
-    int visited_locations = count_number_of_visited_locations(data, starting_position);
+    map<array<int, 2>, array<bool, 4>> locations_visited = count_number_of_visited_locations(data, starting_position);
 
-    cout << visited_locations << endl;
+    int valid_obstacle_count = count_valid_obstacles(data, starting_position);
+
+    cout << locations_visited.size() << endl;
+
+    cout << valid_obstacle_count << endl;
 }
